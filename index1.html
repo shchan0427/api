@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>급식 알레르기 확인</title>
+  <style>
+    body { margin: 0; background: #f5f7fb; color: #172238; font-family: Arial, "Malgun Gothic", sans-serif; }
+    main { max-width: 780px; margin: auto; padding: 28px 16px 50px; }
+    .card { background: white; border: 1px solid #dfe5ee; border-radius: 16px; padding: 22px; margin: 18px 0; }
+    h1 { margin-bottom: 8px; } h2 { font-size: 20px; }
+    .muted { color: #53647d; } .note { color: #53647d; font-size: 13px; line-height: 1.6; }
+    .field { margin: 14px 0; } .field > label { display: block; font-weight: bold; margin-bottom: 7px; }
+    input[type="text"], input[type="date"], select { box-sizing: border-box; width: 100%; padding: 11px; border: 1px solid #acb9cb; border-radius: 8px; font: inherit; background: white; }
+    button { cursor: pointer; padding: 11px 18px; border: 0; border-radius: 8px; background: #2358c4; color: white; font: inherit; }
+    button:disabled, select:disabled { opacity: .55; cursor: not-allowed; }
+    .search-row { display: flex; gap: 8px; } .search-row input { flex: 1; }
+    .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 8px; }
+    .checks label { display: block; padding: 10px; border-radius: 8px; background: #f3f6fb; cursor: pointer; }
+    .checks input { margin-right: 7px; }
+    #message { min-height: 22px; color: #984000; font-weight: bold; }
+    .meal { border-top: 1px solid #dfe5ee; margin-top: 18px; padding-top: 12px; }
+    .menu { padding: 10px; margin: 7px 0; border-radius: 8px; background: #f4f6fa; }
+    .menu.warning { background: #fff0e9; border: 1px solid #efad89; }
+    .badge { display: inline-block; margin-left: 8px; padding: 3px 7px; border-radius: 5px; background: #a73f18; color: white; font-size: 12px; }
+    .menu small { display: block; margin-top: 4px; color: #53647d; }
+    @media (max-width: 550px) { .search-row { display: block; } .search-row button { margin-top: 8px; width: 100%; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>급식 알레르기 확인</h1>
+  <p class="muted">학교, 날짜, 피해야 할 알레르기 항목을 선택하세요.</p>
+
+  <section class="card">
+    <h2>1. 학교 선택</h2>
+    <form id="school-form">
+      <div class="field">
+        <label for="school-name">학교 이름 검색</label>
+        <div class="search-row">
+          <input id="school-name" type="text" placeholder="예: 서울고등학교" minlength="2" required>
+          <button type="submit">검색</button>
+        </div>
+      </div>
+    </form>
+    <div class="field">
+      <label for="school-select">검색 결과에서 학교 선택</label>
+      <select id="school-select" disabled>
+        <option value="">학교를 먼저 검색하세요</option>
+      </select>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2. 날짜와 알레르기 선택</h2>
+    <div class="field">
+      <label for="meal-date">급식 날짜</label>
+      <input id="meal-date" type="date" required>
+    </div>
+    <p>피해야 할 항목을 체크하세요. 여러 개 선택할 수 있습니다.</p>
+    <div class="checks">
+      <label><input type="checkbox" name="allergen" value="1">1. 난류</label>
+      <label><input type="checkbox" name="allergen" value="2">2. 우유</label>
+      <label><input type="checkbox" name="allergen" value="3">3. 메밀</label>
+      <label><input type="checkbox" name="allergen" value="4">4. 땅콩</label>
+      <label><input type="checkbox" name="allergen" value="5">5. 대두</label>
+      <label><input type="checkbox" name="allergen" value="6">6. 밀</label>
+      <label><input type="checkbox" name="allergen" value="7">7. 고등어</label>
+      <label><input type="checkbox" name="allergen" value="8">8. 게</label>
+      <label><input type="checkbox" name="allergen" value="9">9. 새우</label>
+      <label><input type="checkbox" name="allergen" value="10">10. 돼지고기</label>
+      <label><input type="checkbox" name="allergen" value="11">11. 복숭아</label>
+      <label><input type="checkbox" name="allergen" value="12">12. 토마토</label>
+      <label><input type="checkbox" name="allergen" value="13">13. 아황산류</label>
+      <label><input type="checkbox" name="allergen" value="14">14. 호두</label>
+      <label><input type="checkbox" name="allergen" value="15">15. 닭고기</label>
+      <label><input type="checkbox" name="allergen" value="16">16. 쇠고기</label>
+      <label><input type="checkbox" name="allergen" value="17">17. 오징어</label>
+      <label><input type="checkbox" name="allergen" value="18">18. 조개류</label>
+      <label><input type="checkbox" name="allergen" value="19">19. 잣</label>
+    </div>
+    <p><button id="meal-button" type="button">급식 확인</button></p>
+    <p id="message" role="status" aria-live="polite"></p>
+  </section>
+
+  <section id="result-card" class="card" hidden>
+    <h2 id="result-title">급식 결과</h2>
+    <div id="meal-results"></div>
+  </section>
+
+  <p class="note">알레르기 표시는 학교가 나이스에 입력한 식단을 기준으로 합니다. 실제 섭취 전 학교의 공식 안내를 확인하세요.<br>
+    출처: <a href="https://open.neis.go.kr/portal/data/service/selectServicePage.do?infId=OPEN17320190722180924242823&amp;infSeq=2" target="_blank" rel="noopener">나이스 급식식단정보</a>
+  </p>
+</main>
+
+<script>
+  const schoolForm = document.getElementById("school-form");
+  const schoolSelect = document.getElementById("school-select");
+  const mealDate = document.getElementById("meal-date");
+  const message = document.getElementById("message");
+  const mealResults = document.getElementById("meal-results");
+  const resultCard = document.getElementById("result-card");
+  const allergenInputs = Array.from(document.querySelectorAll('input[name="allergen"]'));
+  const allergenNames = Object.fromEntries(allergenInputs.map(input => [
+    Number(input.value), input.parentElement.textContent.trim().replace(/^\d+\.\s*/, "")
+  ]));
+  let schools = [];
+
+  if (location.protocol === "file:") {
+    message.textContent = "HTML 파일을 직접 열었습니다. PyCharm에서 app.py를 실행한 뒤 http://127.0.0.1:5000 으로 접속하세요.";
+    schoolForm.querySelector('button[type="submit"]').disabled = true;
+    document.getElementById("meal-button").disabled = true;
+  }
+
+  const today = new Date();
+  mealDate.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  async function getJson(url) {
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "요청에 실패했습니다.");
+    return data;
+  }
+
+  schoolForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    schoolSelect.replaceChildren(new Option("검색 중...", ""));
+    schoolSelect.disabled = true;
+    resultCard.hidden = true;
+    message.textContent = "학교를 검색하는 중입니다...";
+    try {
+      const name = document.getElementById("school-name").value.trim();
+      const data = await getJson(`/api/schools?name=${encodeURIComponent(name)}`);
+      schools = data.schools;
+      schoolSelect.replaceChildren(new Option(schools.length ? "학교를 선택하세요" : "검색 결과가 없습니다", ""));
+      schools.forEach((school, index) => {
+        schoolSelect.add(new Option(`${school.name} — ${school.address}`, String(index)));
+      });
+      schoolSelect.disabled = schools.length === 0;
+      message.textContent = schools.length ? "검색 결과에서 학교를 선택하세요." : "검색 결과가 없습니다.";
+    } catch (error) {
+      schools = [];
+      schoolSelect.replaceChildren(new Option("학교를 먼저 검색하세요", ""));
+      message.textContent = error.message;
+    }
+  });
+
+  schoolSelect.addEventListener("change", () => {
+    const school = schools[Number(schoolSelect.value)];
+    message.textContent = schoolSelect.value === "" ? "" : `${school.name} 선택됨`;
+  });
+
+  document.getElementById("meal-button").addEventListener("click", async () => {
+    resultCard.hidden = true;
+    if (schoolSelect.value === "") { message.textContent = "학교를 선택하세요."; return; }
+    if (!mealDate.value) { message.textContent = "날짜를 선택하세요."; return; }
+    const school = schools[Number(schoolSelect.value)];
+    const selected = new Set(allergenInputs.filter(input => input.checked).map(input => Number(input.value)));
+    message.textContent = "급식 정보를 불러오는 중입니다...";
+    try {
+      const params = new URLSearchParams({
+        office: school.office, code: school.code, date: mealDate.value.replaceAll("-", "")
+      });
+      const data = await getJson(`/api/meals?${params}`);
+      mealResults.replaceChildren();
+      document.getElementById("result-title").textContent = `${school.name} · ${mealDate.value}`;
+      if (!data.meals.length) mealResults.textContent = "이 날짜에 등록된 급식이 없습니다.";
+      for (const meal of data.meals) {
+        const section = document.createElement("section");
+        section.className = "meal";
+        const heading = document.createElement("h3");
+        heading.textContent = meal.type;
+        section.append(heading);
+        for (const menu of meal.menus) {
+          const hit = menu.allergens.filter(code => selected.has(code));
+          const line = document.createElement("div");
+          line.className = hit.length ? "menu warning" : "menu";
+          line.append(document.createTextNode(menu.name));
+          if (hit.length) {
+            const badge = document.createElement("span");
+            badge.className = "badge";
+            badge.textContent = `주의: ${hit.map(code => allergenNames[code]).join(", ")}`;
+            line.append(badge);
+          }
+          const details = document.createElement("small");
+          details.textContent = menu.allergens.length
+            ? `알레르기: ${menu.allergens.map(code => allergenNames[code]).join(", ")}`
+            : "알레르기 표기 없음";
+          line.append(details);
+          section.append(line);
+        }
+        if (meal.calories) {
+          const calories = document.createElement("p");
+          calories.textContent = `열량: ${meal.calories}`;
+          section.append(calories);
+        }
+        mealResults.append(section);
+      }
+      message.textContent = "";
+      resultCard.hidden = false;
+    } catch (error) {
+      message.textContent = error.message;
+    }
+  });
+</script>
+</body>
+</html>
+
